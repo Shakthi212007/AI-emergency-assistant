@@ -3,7 +3,7 @@ import requests
 from gtts import gTTS
 import os
 
-API_KEY = "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"
+API_KEY = "your openrouter API key"
 
 st.title("🚨 AI Emergency Assistant")
 st.warning("⚠️ This is AI guidance. Call emergency services if needed.")
