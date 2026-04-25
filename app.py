@@ -3,8 +3,11 @@ import requests
 from gtts import gTTS
 import os
 
-API_KEY = "your_openrouter_api_key_here"
-
+API_KEY = os.getenv("OPENROUTER_API_KEY")
+if not API_KEY:
+    st.error("API key not found.please set OPENROUTER_API_KEY")
+    st.stop()
+#UI    
 st.title("🚨 AI Emergency Assistant")
 st.warning("⚠️ This is AI guidance. Call emergency services if needed.")
 st.info("📞 Emergency Number: 112")
