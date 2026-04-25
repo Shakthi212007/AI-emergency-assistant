@@ -1,13 +1,17 @@
-﻿import streamlit as st
+import streamlit as st
 import requests
 from gtts import gTTS
+import io
 import os
 
+# ---- API KEY ----
 API_KEY = os.getenv("OPENROUTER_API_KEY")
+
 if not API_KEY:
-    st.error("API key not found.please set OPENROUTER_API_KEY")
+    st.error("API key not found. Please set OPENROUTER_API_KEY")
     st.stop()
-#UI    
+
+# ---- UI ----
 st.title("🚨 AI Emergency Assistant")
 st.warning("⚠️ This is AI guidance. Call emergency services if needed.")
 st.info("📞 Emergency Number: 112")
@@ -43,6 +47,7 @@ st.session_state.user_input = text
 
 # ---- GET HELP ----
 if st.button("Get help"):
+
     if st.session_state.user_input.strip():
 
         with st.spinner("Getting help..."):
@@ -58,7 +63,7 @@ if st.button("Get help"):
                     "messages": [
                         {
                             "role": "system",
-                            "content": f"You are an emergency assistant. Give short, clear, step-by-step instructions in {language}."
+                            "content": f"You are a life-saving emergency assistant. Give short, clear, step-by-step instructions in simple {language}."
                         },
                         {
                             "role": "user",
@@ -71,15 +76,20 @@ if st.button("Get help"):
             data = response.json()
 
             if "choices" in data:
+
                 result = data["choices"][0]["message"]["content"]
 
                 st.success("🩺 Emergency Instructions:")
                 st.write(result)
 
-                # 🔊 VOICE OUTPUT
+                # ---- 🔊 VOICE OUTPUT (STREAMLIT CLOUD FIX) ----
                 tts = gTTS(text=result, lang=lang_code)
-                tts.save("output.mp3")
-                os.system("start output.mp3")  # Windows
+
+                audio_fp = io.BytesIO()
+                tts.write_to_fp(audio_fp)
+                audio_fp.seek(0)
+
+                st.audio(audio_fp, format="audio/mp3")
 
             else:
                 st.error("API Error")
