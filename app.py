@@ -59,11 +59,10 @@ Respond in SIMPLE spoken Tamil (conversational style).
 Do NOT use formal Tamil or textbook language.
 
 Use short sentences like how people speak in real life.
-Keep it easy for an average person in Tamil Nadu to understand quickly.
-"""
+Keep it easy for an average person in Tamil Nadu to understand quickly."""
             else:
                  system_prompt =f"""you are a life_saving emergency assistant .give short ,clear,step-by-step instruction
-                 in simple{language}
+                 in simple{language}"""
                  
             response = requests.post(
                 "https://openrouter.ai/api/v1/chat/completions",
