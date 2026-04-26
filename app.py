@@ -124,5 +124,5 @@ Rules:
                 st.write(data)
 
     else:
-        st.error("Please enter an emergen
+        st.error("Please enter an emergency description")
 
