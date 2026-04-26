@@ -1,118 +1,135 @@
 import streamlit as st
 import requests
 from gtts import gTTS
-import io
 import os
 
-# ---- API KEY ----
+# ---------------- API KEY ----------------
 API_KEY = os.getenv("OPENROUTER_API_KEY")
 
 if not API_KEY:
-    st.error("API key not found. Please set OPENROUTER_API_KEY")
+    st.error("API key not found. Set OPENROUTER_API_KEY in secrets/environment.")
     st.stop()
 
-# ---- UI ----
+# ---------------- UI SETUP ----------------
+st.set_page_config(page_title="AI Emergency Assistant", page_icon="🚨")
+
 st.title("🚨 AI Emergency Assistant")
-st.warning("⚠️ This is AI guidance. Call emergency services if needed.")
+st.warning("⚠️ This is AI guidance only. Call 112 immediately in real emergencies.")
 st.info("📞 Emergency Number: 112")
 
-# ---- LANGUAGE SELECT ----
-language = st.selectbox("🌍 Select Language", ["English", "Tamil", "Hindi"])
+# ---------------- SESSION STATE ----------------
+if "response" not in st.session_state:
+    st.session_state.response = ""
 
-lang_code = {
-    "English": "en",
-    "Tamil": "ta",
-    "Hindi": "hi"
-}[language]
+# STEP 1: PANIC MODE STATE
+if "panic_mode" not in st.session_state:
+    st.session_state.panic_mode = False
 
-# ---- SESSION STATE ----
-if "user_input" not in st.session_state:
-    st.session_state.user_input = ""
+# ---------------- AI FUNCTION ----------------
+def get_help(emergency_type):
+    prompt = f"""
+    You are an emergency response assistant.
 
-# ---- QUICK BUTTONS ----
+    Situation: {emergency_type}
+
+    Give response in STRICT format:
+    1. Immediate Safety Action
+    2. What to do next
+    3. When to call emergency (112)
+
+    Keep it short, clear, and step-by-step.
+    """
+
+    headers = {
+        "Authorization": f"Bearer {API_KEY}",
+        "Content-Type": "application/json"
+    }
+
+    data = {
+        "model": "mistralai/mistral-7b-instruct",
+        "messages": [{"role": "user", "content": prompt}]
+    }
+
+    try:
+        response = requests.post(
+            "https://openrouter.ai/api/v1/chat/completions",
+            headers=headers,
+            json=data
+        )
+
+        result = response.json()
+        return result["choices"][0]["message"]["content"]
+
+    except:
+        return "⚠️ Error. Immediately call 112 and stay safe."
+
+# ---------------- STEP 2: PANIC BUTTONS ----------------
+st.subheader("🚨 Emergency Control")
+
+if st.button("🔴 ACTIVATE PANIC MODE"):
+    st.session_state.panic_mode = True
+
+if st.button("🟢 EXIT PANIC MODE"):
+    st.session_state.panic_mode = False
+
+# ---------------- PANIC MODE SCREEN ----------------
+if st.session_state.panic_mode:
+    st.error("🚨 PANIC MODE ACTIVE 🚨")
+
+    st.subheader("⚠️ Stay calm and follow instructions")
+
+    panic_help = get_help("User is in panic emergency situation. Provide urgent guidance.")
+
+    st.subheader("🧠 Instant AI Guidance")
+    st.write(panic_help)
+
+    # Voice output
+    try:
+        tts = gTTS(panic_help, lang="en")
+        tts.save("panic.mp3")
+        audio_file = open("panic.mp3", "rb")
+        st.audio(audio_file.read(), format="audio/mp3")
+    except:
+        st.warning("Voice not available, text shown above.")
+
+    st.stop()
+
+# ---------------- NORMAL MODE ----------------
+st.subheader("Quick Emergency Help")
+
 col1, col2, col3 = st.columns(3)
 
-if col1.button("🔥 Fire"):
-    st.session_state.user_input = "fire accident"
+with col1:
+    if st.button("🔥 Fire"):
+        st.session_state.response = get_help("Fire accident in home or building")
 
-if col2.button("🩸 Injury"):
-    st.session_state.user_input = "severe bleeding injury"
+with col2:
+    if st.button("🚑 Medical"):
+        st.session_state.response = get_help("Medical emergency, person unconscious or injured")
 
-if col3.button("💓 Heart"):
-    st.session_state.user_input = "person unconscious not breathing"
+with col3:
+    if st.button("🚗 Accident"):
+        st.session_state.response = get_help("Road accident emergency situation")
 
-# ---- TEXT INPUT ----
-text = st.text_input("Describe your emergency:", value=st.session_state.user_input)
-st.session_state.user_input = text
+# ---------------- CUSTOM INPUT ----------------
+st.subheader("Or Describe Emergency")
+user_input = st.text_input("Type your emergency here:")
 
-# ---- GET HELP ----
-if st.button("Get help"):
+if st.button("Get Help"):
+    if user_input.strip():
+        st.session_state.response = get_help(user_input)
 
-    if st.session_state.user_input.strip():
+# ---------------- OUTPUT ----------------
+if st.session_state.response:
+    st.subheader("🧠 AI Guidance")
+    st.write(st.session_state.response)
 
-        with st.spinner("Getting help..."):
-
-            if language =="tamil":
-                system_prompt=""" You are a life-saving emergency assistant.
-Your job:
-- Respond to emergencies in simple, clear Tamil.
-- Use short sentences.
-- Give direct safety instructions.
-- Do NOT use complex grammar or poetic Tamil.
-- Always focus on actions like: call 112, move to safety, ask for help.
-
-Rules:
-1. Keep responses very short (3–6 lines max).
-2. Use simple Tamil words that anyone can understand.
-3. Do NOT translate word-by-word from English.
-4. Always prioritize safety instructions first.
-"""
-            else:
-                 system_prompt =f"""you are a life_saving emergency assistant .give short ,clear,step-by-step instruction
-                 in simple{language}"""
-                 
-            response = requests.post(
-                "https://openrouter.ai/api/v1/chat/completions",
-                headers={
-                    "Authorization": f"Bearer {API_KEY}",
-                    "Content-Type": "application/json"
-                },
-                json={
-                    "model": "openai/gpt-3.5-turbo",
-                    "messages": [
-                        {
-                            "role": "system",
-                            "content": f"You are a life-saving emergency assistant. Give short, clear, step-by-step instructions in simple {language}."
-                        },
-                        {
-                            "role": "user",
-                            "content": st.session_state.user_input
-                        }
-                    ]
-                }
-            )
-
-            data = response.json()
-
-            if "choices" in data:
-
-                result = data["choices"][0]["message"]["content"]
-
-                st.success("🩺 Emergency Instructions:")
-                st.write(result)
-
-                # ---- 🔊 VOICE OUTPUT (STREAMLIT CLOUD FIX) ----
-                tts = gTTS(text=result, lang=lang_code)
-
-                audio_fp = io.BytesIO()
-                tts.write_to_fp(audio_fp)
-                audio_fp.seek(0)
-
-                st.audio(audio_fp, format="audio/mp3")
-
-            else:
-                st.error("API Error")
-                st.write(data)
-
-    else:
-        st.error("Please enter an emergency description")
+    # Voice output
+    try:
+        tts = gTTS(st.session_state.response, lang="en")
+        tts.save("emergency.mp3")
+        audio_file = open("emergency.mp3", "rb")
+        st.audio(audio_file.read(), format="audio/mp3")
+    except:
+        st.warning("Voice output failed, but text is available.")
+             
