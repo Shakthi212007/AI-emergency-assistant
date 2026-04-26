@@ -12,6 +12,7 @@ if not API_KEY:
     st.stop()
 
 # ---- UI ----
+st.set_page_config(page_title="AI Emergency Assistant", page_icon="🚨")
 st.title("🚨 AI Emergency Assistant")
 st.warning("⚠️ This is AI guidance. Call emergency services if needed.")
 st.info("""
