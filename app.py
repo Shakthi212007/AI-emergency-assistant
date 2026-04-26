@@ -12,12 +12,8 @@ if not API_KEY:
     st.stop()
 
 # ---- UI ----
-st.set_page_config(page_title="AI Emergency Assistant", page_icon="🚨")
-
 st.title("🚨 AI Emergency Assistant")
-
-st.warning("⚠️ This is AI guidance. Call emergency services immediately if needed.")
-
+st.warning("⚠️ This is AI guidance. Call emergency services if needed.")
 st.info("""
 📞 Emergency Help (India)
 
@@ -65,41 +61,25 @@ if st.button("Get help"):
 
         with st.spinner("Getting help..."):
 
-            # ---- SYSTEM PROMPT ----
-            if language == "Tamil":
-                system_prompt = """
-நீங்கள் அவசர உதவி வழங்கும் AI.
-
-பதில் எப்படி இருக்க வேண்டும்:
-- மிகவும் எளிய பேசும் தமிழில் பேசவும்
-- புத்தக தமிழ் பயன்படுத்தாதீர்கள்
-- மக்கள் புரிந்துக்கொள்ளும் மாதிரி இருக்க வேண்டும்
-
-விதிகள்:
-1. 3–5 வரிகள் மட்டும்
-2. ஒவ்வொரு வரியும் ஒரு action
-3. உடனடி உதவி சொல்ல வேண்டும்
-4. எப்போதும் முதல் வரி: "112க்கு உடனே call பண்ணுங்க"
-
-உதாரணம்:
-- 112க்கு call பண்ணுங்க
-- அங்க இருந்து விலகுங்க
-- அருகில உள்ளவங்கல help கேளுங்க
-- safe இடத்துக்கு போங்க
-"""
-            else:
-                system_prompt = f"""
-You are a life-saving emergency assistant.
+            if language =="tamil":
+                system_prompt=""" You are a life-saving emergency assistant.
+Your job:
+- Respond to emergencies in simple, clear Tamil.
+- Use short sentences.
+- Give direct safety instructions.
+- Do NOT use complex grammar or poetic Tamil.
+- Always focus on actions like: call 112, move to safety, ask for help.
 
 Rules:
-- Give very short, clear instructions
-- Use simple {language}
-- 3 to 5 lines only
-- Each line = one action
-- First step must be calling emergency number
+1. Keep responses very short (3–6 lines max).
+2. Use simple Tamil words that anyone can understand.
+3. Do NOT translate word-by-word from English.
+4. Always prioritize safety instructions first.
 """
-
-            # ---- API CALL ----
+            else:
+                 system_prompt =f"""you are a life_saving emergency assistant .give short ,clear,step-by-step instruction
+                 in simple{language}"""
+                 
             response = requests.post(
                 "https://openrouter.ai/api/v1/chat/completions",
                 headers={
@@ -109,8 +89,14 @@ Rules:
                 json={
                     "model": "openai/gpt-3.5-turbo",
                     "messages": [
-                        {"role": "system", "content": system_prompt},
-                        {"role": "user", "content": st.session_state.user_input}
+                        {
+                            "role": "system",
+                            "content": f"You are a life-saving emergency assistant. Give short, clear, step-by-step instructions in simple {language}."
+                        },
+                        {
+                            "role": "user",
+                            "content": st.session_state.user_input
+                        }
                     ]
                 }
             )
@@ -121,16 +107,10 @@ Rules:
 
                 result = data["choices"][0]["message"]["content"]
 
-                # ---- OPTIONAL TAMIL CLEANUP ----
-                if language == "Tamil":
-                    result = result.replace("அழைக்கவும்", "call பண்ணுங்க")
-                    result = result.replace("உடனடியாக", "உடனே")
-                    result = result.replace("தயவு செய்து", "")
-
                 st.success("🩺 Emergency Instructions:")
                 st.write(result)
 
-                # ---- VOICE OUTPUT ----
+                # ---- 🔊 VOICE OUTPUT (STREAMLIT CLOUD FIX) ----
                 tts = gTTS(text=result, lang=lang_code)
 
                 audio_fp = io.BytesIO()
@@ -144,5 +124,5 @@ Rules:
                 st.write(data)
 
     else:
-        st.error("Please enter an emergency description")
+        st.error("Please enter an emergen
 
